@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.so }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        so: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # Os testes primeiro: sao eles que prendem os numeros das tabelas.
+      - name: Testes
+        run: dotnet test testes/Schur.Testes/Schur.Testes.csproj -c Release --nologo
+
+      - name: Os numeros de Schur e as reparticoes que os realizam
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- numeros
+
+      # Este passo quebra sozinho se a busca e a forca bruta discordarem: a
+      # comparacao esta dentro do medidor.
+      - name: Quantas reparticoes validas existem em cada tamanho
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- tamanhos
+
+      - name: O que a poda e a quebra de simetria economizam
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- custo
+
+      - name: O maior conjunto livre de soma contra as duas construcoes classicas
+        run: dotnet run --project ferramentas/Medidor/Medidor.csproj -c Release -- livres
